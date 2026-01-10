@@ -1,3 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String           @id @default(uuid())
+  email           String           @unique
+  passwordHash    String
+  name            String
+  role            Role             @default(USER)
+  verified        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  slug            String  
+
+  @@map("user")
+}
+
+model OtpVerification {
+  id       String @id @default(uuid())
+  email     String
+  otp   String
+  createdAt    DateTime
+  used     Boolean
+}
+
+model Wallet {
+  id       String @id @default(uuid())
+  userId     String  @unique
+  balance   Int
+  lastUpdated    DateTime  @default(now())
+}
+
+model WalletTransaction {
+  id       String @id @default(uuid())
+  walletId     String
+  amount   Int
+  createdAt    DateTime  @default(now())
+  status    String
+  transactionCode    String
+  confirmedAt    DateTime  @default(now())
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAW
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
 // import { NestFactory } from '@nestjs/core';
 // import { ValidationPipe } from '@nestjs/common';
 // import { AppModule } from './app.module';
@@ -69,7 +133,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-
 import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {

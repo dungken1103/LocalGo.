@@ -1,0 +1,184 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//////////////////////
+// ENUMS
+//////////////////////
+
+enum Role {
+  OWNER
+  RENTER
+  ADMIN
+}
+
+enum CarType {
+  SEDAN
+  SUV
+  HATCHBACK
+  PICKUP
+  VAN
+}
+
+enum DriveType {
+  SELF_DRIVE
+  WITH_DRIVER
+}
+
+enum BookingStatus {
+  PENDING_PAYMENT      // chưa pay
+  PENDING_CONFIRMATION // đã pay, chờ xác nhận xe đúng mô tả
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum TransactionType {
+  PAYIN            // tiền từ SePay
+  RENTAL_PENDING   // tiền giữ
+  RENTAL_RELEASE   // pending -> access
+  WITHDRAW
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+//////////////////////
+// USER
+//////////////////////
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String
+  name          String
+  role          Role     @default(RENTER)
+  verified      Boolean  @default(true)
+  slug          String
+
+  wallet        Wallet?
+  cars          Car[]
+
+  rentals       Booking[] @relation("Renter")
+  rentalsOwned  Booking[] @relation("Owner")
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("user")
+}
+
+//////////////////////
+// OTP
+//////////////////////
+
+model OtpVerification {
+  id        String   @id @default(uuid())
+  email     String
+  otp       String
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+//////////////////////
+// WALLET
+//////////////////////
+
+model Wallet {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+
+  availableBalance Int      @default(0) // tiền access
+  pendingBalance   Int      @default(0) // tiền chờ xác nhận
+
+  user             User     @relation(fields: [userId], references: [id])
+  transactions     WalletTransaction[]
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+//////////////////////
+// WALLET TRANSACTION
+//////////////////////
+
+model WalletTransaction {
+  id            String @id @default(uuid())
+
+  walletId      String
+  bookingId     String?
+
+  amount        Int
+  type          TransactionType
+  status        TransactionStatus
+
+  // SePay data
+  sepayOrderId  String? @unique
+  sepayTransId  String?
+  sepayRawData  Json?
+
+  wallet        Wallet   @relation(fields: [walletId], references: [id])
+  booking       Booking? @relation(fields: [bookingId], references: [id])
+
+  createdAt     DateTime @default(now())
+  confirmedAt   DateTime?
+}
+
+//////////////////////
+// CAR
+//////////////////////
+
+model Car {
+  id          String   @id @default(uuid())
+  ownerId     String
+
+  brand       String
+  name        String
+  color       String
+  type        CarType
+  seats       Int
+  driveType   DriveType
+  pricePerDay Int
+  description String?
+
+  owner       User     @relation(fields: [ownerId], references: [id])
+  bookings    Booking[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+//////////////////////
+// BOOKING
+//////////////////////
+
+model Booking {
+  id          String @id @default(uuid())
+
+  carId       String
+  renterId    String
+  ownerId     String
+
+  startDate   DateTime
+  endDate     DateTime
+  totalPrice  Int
+
+  status      BookingStatus
+
+  car         Car   @relation(fields: [carId], references: [id])
+  renter      User  @relation("Renter", fields: [renterId], references: [id])
+  owner       User  @relation("Owner", fields: [ownerId], references: [id])
+
+  transactions WalletTransaction[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

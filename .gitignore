@@ -38,6 +38,16 @@ lerna-debug.log*
 # dotenv environment variable files
 .env
 .env.development.local
+.env.*
+
+# Bổ sung nếu thiếu
+node_modules/
+dist/
+coverage/
+logs/
+*.log
+.vscode/
+.DS_Store
 .env.test.local
 .env.production.local
 .env.local
@@ -54,3 +64,5 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+/generated/prisma
