@@ -10,6 +10,7 @@ import {
 import { WalletService } from './wallet.service';
 import { DepositRequestDTO } from '../auth/dto/deposit-request.dto';
 import { PrismaService } from '../../database/prisma.service';
+import { CreateInvoiceDto } from './dto/wallet.dto';
 
 @Controller('wallet')
 export class WalletController {
@@ -53,5 +54,42 @@ export class WalletController {
     });
 
     return transactions;
+  }
+
+  @Post('invoice/create')
+  async createInvoice(@Body() dto: CreateInvoiceDto) {
+    return this.walletService.createInvoice(
+      dto.bookingId,
+      dto.renterId,
+      dto.ownerId,
+      dto.amount,
+    );
+  }
+
+  @Post('invoice/cancel')
+  async cancelInvoice(@Body('invoiceId') invoiceId: string) {
+    if (!invoiceId) {
+      throw new Error('Missing invoiceId');
+    }
+
+    return this.walletService.cancelInvoice(invoiceId);
+  }
+
+  @Post('invoice/pay')
+  async payInvoice(@Body('invoiceId') invoiceId: string) {
+    if (!invoiceId) {
+      throw new Error('Missing invoiceId');
+    }
+
+    return this.walletService.payInvoice(invoiceId);
+  }
+
+  @Post('invoice/confirm')
+  async confirmInvoice(@Body('invoiceId') invoiceId: string) {
+    if (!invoiceId) {
+      throw new Error('Missing invoiceId');
+    }
+
+    return this.walletService.confirmInvoice(invoiceId);
   }
 }
