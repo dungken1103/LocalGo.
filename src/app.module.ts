@@ -10,7 +10,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/user/user.module';
 import { DatabaseModule } from './database/database.module';
 import { BookingModule } from './modules/booking/booking.module';
-
+import { CarModule } from './modules/car/car.module';
 
 @Module({
   imports: [
@@ -25,6 +25,7 @@ import { BookingModule } from './modules/booking/booking.module';
     UsersModule,
     DatabaseModule,
     BookingModule,
+    CarModule,
   ],
   controllers: [AppController],
   providers: [AppService],

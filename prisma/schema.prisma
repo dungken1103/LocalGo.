@@ -55,6 +55,7 @@ enum ContractStatus {
   PENDING
   PAID
   CANCELLED
+  REFUNDED
 }
 
 //////////////////////
@@ -151,7 +152,7 @@ model WalletTransaction {
 
 model Car {
   id          String   @id @default(uuid())
-  slug        String?      // ✅ MỚI
+  slug        String   @unique
   ownerId     String
 
   brand       String
