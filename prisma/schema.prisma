@@ -31,17 +31,17 @@ enum DriveType {
 }
 
 enum BookingStatus {
-  PENDING_PAYMENT      // chưa pay
-  PENDING_CONFIRMATION // đã pay, chờ xác nhận xe đúng mô tả
+  PENDING_PAYMENT
+  PENDING_CONFIRMATION
   ACTIVE
   COMPLETED
   CANCELLED
 }
 
 enum TransactionType {
-  PAYIN            // tiền từ SePay
-  RENTAL_PENDING   // tiền giữ
-  RENTAL_RELEASE   // pending -> access
+  PAYIN
+  RENTAL_PENDING
+  RENTAL_RELEASE
   WITHDRAW
 }
 
@@ -49,6 +49,12 @@ enum TransactionStatus {
   PENDING
   SUCCESS
   FAILED
+}
+
+enum ContractStatus {
+  PENDING
+  PAID
+  CANCELLED
 }
 
 //////////////////////
@@ -60,15 +66,18 @@ model User {
   email         String   @unique
   passwordHash  String
   name          String
+  slug          String?      // ✅ MỚI
   role          Role     @default(RENTER)
   verified      Boolean  @default(true)
-  slug          String
 
   wallet        Wallet?
   cars          Car[]
 
   rentals       Booking[] @relation("Renter")
   rentalsOwned  Booking[] @relation("Owner")
+
+  contractsRented Contract[] @relation("ContractRenter")
+  contractsOwned  Contract[] @relation("ContractOwner")
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -84,6 +93,7 @@ model OtpVerification {
   id        String   @id @default(uuid())
   email     String
   otp       String
+  slug      String?      // ✅ MỚI
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
 }
@@ -95,9 +105,10 @@ model OtpVerification {
 model Wallet {
   id               String   @id @default(uuid())
   userId           String   @unique
+  slug             String?      // ✅ MỚI
 
-  availableBalance Int      @default(0) // tiền access
-  pendingBalance   Int      @default(0) // tiền chờ xác nhận
+  availableBalance Int      @default(0)
+  pendingBalance   Int      @default(0)
 
   user             User     @relation(fields: [userId], references: [id])
   transactions     WalletTransaction[]
@@ -112,21 +123,23 @@ model Wallet {
 
 model WalletTransaction {
   id            String @id @default(uuid())
+  slug          String?     // ✅ MỚI
 
   walletId      String
   bookingId     String?
+  contractId    String?
 
   amount        Int
   type          TransactionType
   status        TransactionStatus
 
-  // SePay data
   sepayOrderId  String? @unique
   sepayTransId  String?
   sepayRawData  Json?
 
   wallet        Wallet   @relation(fields: [walletId], references: [id])
   booking       Booking? @relation(fields: [bookingId], references: [id])
+  contract      Contract? @relation(fields: [contractId], references: [id])
 
   createdAt     DateTime @default(now())
   confirmedAt   DateTime?
@@ -138,6 +151,7 @@ model WalletTransaction {
 
 model Car {
   id          String   @id @default(uuid())
+  slug        String?      // ✅ MỚI
   ownerId     String
 
   brand       String
@@ -162,6 +176,7 @@ model Car {
 
 model Booking {
   id          String @id @default(uuid())
+  slug        String?     // ✅ MỚI
 
   carId       String
   renterId    String
@@ -171,14 +186,40 @@ model Booking {
   endDate     DateTime
   totalPrice  Int
 
-  status      BookingStatus
+  status      BookingStatus @default(PENDING_PAYMENT)
 
   car         Car   @relation(fields: [carId], references: [id])
   renter      User  @relation("Renter", fields: [renterId], references: [id])
   owner       User  @relation("Owner", fields: [ownerId], references: [id])
 
   transactions WalletTransaction[]
+  contract     Contract?
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+//////////////////////
+// CONTRACT
+//////////////////////
+
+model Contract {
+  id          String @id @default(uuid())
+  slug        String?      // ✅ MỚI
+
+  bookingId   String @unique
+  renterId    String
+  ownerId     String
+
+  totalAmount Int
+  status      ContractStatus @default(PENDING)
+
+  booking     Booking @relation(fields: [bookingId], references: [id])
+  renter      User    @relation("ContractRenter", fields: [renterId], references: [id])
+  owner       User    @relation("ContractOwner", fields: [ownerId], references: [id])
+
+  transactions WalletTransaction[]
+
+  createdAt   DateTime @default(now())
+  paidAt      DateTime?
 }

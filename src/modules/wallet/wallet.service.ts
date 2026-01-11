@@ -4,6 +4,9 @@ import { Cron } from '@nestjs/schedule';
 import axios from 'axios';
 import { TransactionStatus, TransactionType } from '@prisma/client';
 import { NotFoundException } from '@nestjs/common';
+import { BookingStatus } from '@prisma/client';
+import { ContractStatus } from '@prisma/client';
+import { Contract } from './dto/contract.dto';
 
 @Injectable()
 export class WalletService {
@@ -46,6 +49,7 @@ export class WalletService {
   async checkPendingTransactions() {
     const txs = await this.prisma.walletTransaction.findMany({
       where: { status: TransactionStatus.PENDING },
+      include: { booking: true },
     });
 
     for (const t of txs) {
@@ -53,22 +57,92 @@ export class WalletService {
 
       if (!matched) continue;
 
+      const ownerWallet = await this.prisma.wallet.findUnique({
+        where: { userId: t.booking!.ownerId },
+      });
+
+      if (!ownerWallet) continue;
+
+      const ownerAmount = Math.floor(t.amount * 0.9);
+
       await this.prisma.$transaction([
+        // update transaction
         this.prisma.walletTransaction.update({
           where: { id: t.id },
           data: {
             status: TransactionStatus.SUCCESS,
             confirmedAt: new Date(),
+            type: TransactionType.RENTAL_PENDING,
           },
         }),
+
+        // cộng tiền vào pendingBalance OWNER
         this.prisma.wallet.update({
-          where: { id: t.walletId },
+          where: { id: ownerWallet.id },
           data: {
-            availableBalance: { increment: t.amount },
+            pendingBalance: { increment: ownerAmount },
+          },
+        }),
+
+        // update booking
+        this.prisma.booking.update({
+          where: { id: t.bookingId! },
+          data: {
+            status: BookingStatus.PENDING_CONFIRMATION,
+          },
+        }),
+
+        // update contract
+        this.prisma.contract.update({
+          where: { bookingId: t.bookingId! },
+          data: {
+            status: ContractStatus.PAID,
+            paidAt: new Date(),
           },
         }),
       ]);
     }
+  }
+  async confirmCarDelivery(bookingId: string, ownerId: string) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: bookingId },
+      // include: { contract: true },
+    });
+
+    if (!booking || booking.ownerId !== ownerId) {
+      throw new Error('Unauthorized');
+    }
+
+    const wallet = await this.prisma.wallet.findUnique({
+      where: { userId: ownerId },
+    });
+
+    const amount = Math.floor(booking.totalPrice * 0.9);
+
+    await this.prisma.$transaction([
+      this.prisma.wallet.update({
+        where: { id: wallet!.id },
+        data: {
+          pendingBalance: { decrement: amount },
+          availableBalance: { increment: amount },
+        },
+      }),
+
+      this.prisma.walletTransaction.create({
+        data: {
+          walletId: wallet!.id,
+          amount,
+          type: TransactionType.RENTAL_RELEASE,
+          status: TransactionStatus.SUCCESS,
+          bookingId,
+        },
+      }),
+
+      this.prisma.booking.update({
+        where: { id: bookingId },
+        data: { status: BookingStatus.ACTIVE },
+      }),
+    ]);
   }
 
   async checkWithSepayAPI(
@@ -79,7 +153,7 @@ export class WalletService {
 
     const res = await axios.get(url, {
       headers: {
-        Authorization: `Bearer YOUR_SEPAY_TOKEN`,
+        Authorization: `Bearer ${process.env.SEPAY_API_KEY}`,
       },
     });
 
@@ -101,5 +175,101 @@ export class WalletService {
         availableBalance: { increment: amount },
       },
     });
+  }
+
+  async createInvoice(bookingId: string,renterId: string, ownerId: string, amount: number) {
+    const renterWallet = await this.prisma.wallet.findUnique({
+      where: { userId: renterId },
+    });
+    if (!renterWallet) throw new Error('Renter wallet not found');
+
+    const ownerWallet = await this.prisma.wallet.findUnique({
+      where: { userId: ownerId },
+    });
+    if (!ownerWallet) throw new Error('Owner wallet not found');
+
+    const invoice = await this.prisma.contract.create({
+      data: {
+        bookingId,
+        renterId,
+        ownerId,
+        totalAmount: amount,
+        status: ContractStatus.PENDING,
+      },
+    });
+
+    return invoice;
+  }
+
+  async cancelInvoice(invoiceId: string) {
+    const invoice = await this.prisma.contract.findUnique({
+      where: { id: invoiceId },
+    });
+    if (!invoice) throw new Error('Invoice not found');
+
+    if (invoice.status !== 'PENDING') {
+      throw new Error('Only pending invoices can be canceled');
+    }
+
+    await this.prisma.contract.update({
+      where: { id: invoiceId },
+      data: { status: ContractStatus.CANCELLED },
+    });
+  }
+
+  async payInvoice(invoiceId: string) {
+    const invoice = await this.prisma.contract.findUnique({
+      where: { id: invoiceId },
+    });
+    if (!invoice) throw new Error('Invoice not found');
+
+    if (invoice.status !== 'PENDING') {
+      throw new Error('Only pending invoices can be paid');
+    }
+
+    // Simulate payment via Sepay
+    const paymentSuccess = true; // Replace with actual payment logic
+
+    if (paymentSuccess) {
+      await this.prisma.$transaction([
+        this.prisma.contract.update({
+          where: { id: invoiceId },
+          data: { status: 'PAID' },
+        }),
+        this.prisma.wallet.update({
+          where: { userId: invoice.ownerId },
+          data: {
+            pendingBalance: { increment: invoice.totalAmount * 0.9 },
+          },
+        }),
+      ]);
+    } else {
+      throw new Error('Payment failed');
+    }
+  }
+
+  async confirmInvoice(invoiceId: string) {
+    const invoice = await this.prisma.contract.findUnique({
+      where: { id: invoiceId },
+    });
+    if (!invoice) throw new Error('Invoice not found');
+
+    if (invoice.status !== 'PAID') {
+      throw new Error('Only paid invoices can be confirmed');
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.wallet.update({
+        where: { userId: invoice.ownerId },
+        data: {
+          pendingBalance: { decrement: invoice.totalAmount * 0.9 },
+          availableBalance: { increment: invoice.totalAmount * 0.9 },
+        },
+      }),
+      this.prisma.contract.update({
+        where: { id: invoiceId },
+        data: { status: ContractStatus.PAID },
+      }),
+    ]);
   }
 }
