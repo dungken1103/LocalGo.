@@ -1,19 +1,48 @@
 import { Controller, Post, Body } from '@nestjs/common';
-import { SepayService } from './sepay.service';
+import { PrismaService } from '../../database/prisma.service';
+import { TransactionStatus, TransactionType } from '@prisma/client';
 
 @Controller('sepay')
 export class SepayController {
-  constructor(private sepay: SepayService) {}
+  constructor(private prisma: PrismaService) {}
 
-  // @Post('create-qr')
-  // async createQR(@Body() body: { amount: number; userId: string }) {
-  //   const content = `PAYIN_USER_${body.userId}`;
+  @Post('webhook')
+  async handleWebhook(@Body() body: any) {
+    if (!body) return { ok: true };
 
-  //   const qr = await this.sepay.createDepositQR(body.amount, content);
+    const { amount, content, status } = body;
+    if (!content || !amount || status !== 'SUCCESS') return { ok: true };
 
-  //   return {
-  //     qr,
-  //     content,
-  //   };
-  // }
+    const tx = await this.prisma.walletTransaction.findFirst({
+      where: {
+        sepayOrderId: content,
+        type: TransactionType.RENTAL_PENDING,
+      },
+    });
+
+    if (!tx) return { ok: true };
+
+    // 🔒 ATOMIC UPDATE
+    const updated = await this.prisma.walletTransaction.updateMany({
+      where: {
+        id: tx.id,
+        status: TransactionStatus.PENDING,
+      },
+      data: {
+        status: TransactionStatus.SUCCESS,
+        confirmedAt: new Date(),
+      },
+    });
+
+    if (updated.count === 0) return { ok: true };
+
+    await this.prisma.wallet.update({
+      where: { id: tx.walletId },
+      data: {
+        pendingBalance: { increment: tx.amount * 0.9 },
+      },
+    });
+
+    return { ok: true };
+  }
 }

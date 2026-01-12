@@ -34,75 +34,65 @@ export class WalletService {
     });
     if (!wallet) throw new Error('Wallet not found');
 
-    await this.prisma.walletTransaction.create({
+    const tx = await this.prisma.walletTransaction.create({
       data: {
         walletId: wallet.id,
         amount,
-        type: TransactionType.PAYIN,
+        type: TransactionType.RENTAL_PENDING,
         status: TransactionStatus.PENDING,
         sepayOrderId,
       },
     });
+
+    return {
+      transactionId: tx.id,
+      sepayOrderId: tx.sepayOrderId,
+      amount: tx.amount,
+      status: tx.status,
+    };
   }
 
-  @Cron('*/30 * * * * *')
-  async checkPendingTransactions() {
+  @Cron('0 0 * * *')
+  async checkPendingPayinTransactions() {
     const txs = await this.prisma.walletTransaction.findMany({
-      where: { status: TransactionStatus.PENDING },
-      include: { booking: true },
+      where: {
+        status: TransactionStatus.PENDING,
+        type: TransactionType.RENTAL_PENDING,
+        sepayOrderId: { not: null },
+      },
     });
 
     for (const t of txs) {
-      const matched = await this.checkWithSepayAPI(t.sepayOrderId!, t.amount);
-
+      const matched = await this.checkWithSepayAPI(
+        t.sepayOrderId!,
+        t.amount,
+      );
       if (!matched) continue;
 
-      const ownerWallet = await this.prisma.wallet.findUnique({
-        where: { userId: t.booking!.ownerId },
+      // 🔒 ATOMIC UPDATE (CHỐT)
+      const updated = await this.prisma.walletTransaction.updateMany({
+        where: {
+          id: t.id,
+          status: TransactionStatus.PENDING,
+        },
+        data: {
+          status: TransactionStatus.SUCCESS,
+          confirmedAt: new Date(),
+        },
       });
 
-      if (!ownerWallet) continue;
+      // ❗ nếu không update được → đã xử lý rồi
+      if (updated.count === 0) continue;
 
-      const ownerAmount = Math.floor(t.amount * 0.9);
-
-      await this.prisma.$transaction([
-        // update transaction
-        this.prisma.walletTransaction.update({
-          where: { id: t.id },
-          data: {
-            status: TransactionStatus.SUCCESS,
-            confirmedAt: new Date(),
-            type: TransactionType.RENTAL_PENDING,
-          },
-        }),
-
-        // cộng tiền vào pendingBalance OWNER
-        this.prisma.wallet.update({
-          where: { id: ownerWallet.id },
-          data: {
-            pendingBalance: { increment: ownerAmount },
-          },
-        }),
-
-        // update booking
-        this.prisma.booking.update({
-          where: { id: t.bookingId! },
-          data: {
-            status: BookingStatus.PENDING_CONFIRMATION,
-          },
-        }),
-
-        // update contract
-        this.prisma.contract.update({
-          where: { bookingId: t.bookingId! },
-          data: {
-            status: ContractStatus.PAID,
-            paidAt: new Date(),
-          },
-        }),
-      ]);
+      await this.prisma.wallet.update({
+        where: { id: t.walletId },
+        data: {
+          pendingBalance: { increment: t.amount * 0.9 },
+        },
+      });
     }
   }
+
   async confirmCarDelivery(bookingId: string, ownerId: string) {
     const booking = await this.prisma.booking.findUnique({
       where: { id: bookingId },
@@ -153,7 +143,7 @@ export class WalletService {
 
     const res = await axios.get(url, {
       headers: {
-        Authorization: `Bearer ${process.env.SEPAY_API_KEY}`,
+        Authorization: `Bearer ${process.env.SEPAY_TOKEN}`,
       },
     });
 
@@ -177,7 +167,12 @@ export class WalletService {
     });
   }
 
-  async createInvoice(bookingId: string,renterId: string, ownerId: string, amount: number) {
+  async createInvoice(
+    bookingId: string,
+    renterId: string,
+    ownerId: string,
+    amount: number,
+  ) {
     const renterWallet = await this.prisma.wallet.findUnique({
       where: { userId: renterId },
     });
