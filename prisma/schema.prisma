@@ -67,7 +67,7 @@ model User {
   email         String   @unique
   passwordHash  String
   name          String
-  slug          String?      // ✅ MỚI
+  slug          String?  @unique
   role          Role     @default(RENTER)
   verified      Boolean  @default(true)
 
@@ -94,7 +94,7 @@ model OtpVerification {
   id        String   @id @default(uuid())
   email     String
   otp       String
-  slug      String?      // ✅ MỚI
+  slug      String?  @unique
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
 }
@@ -106,7 +106,7 @@ model OtpVerification {
 model Wallet {
   id               String   @id @default(uuid())
   userId           String   @unique
-  slug             String?      // ✅ MỚI
+  slug             String?  @unique
 
   availableBalance Int      @default(0)
   pendingBalance   Int      @default(0)
@@ -124,7 +124,7 @@ model Wallet {
 
 model WalletTransaction {
   id            String @id @default(uuid())
-  slug          String?     // ✅ MỚI
+  slug          String?    @unique
 
   walletId      String
   bookingId     String?
@@ -177,7 +177,7 @@ model Car {
 
 model Booking {
   id          String @id @default(uuid())
-  slug        String?     // ✅ MỚI
+  slug        String?    @unique
 
   carId       String
   renterId    String
@@ -206,7 +206,7 @@ model Booking {
 
 model Contract {
   id          String @id @default(uuid())
-  slug        String?      // ✅ MỚI
+  slug        String?    @unique
 
   bookingId   String @unique
   renterId    String
