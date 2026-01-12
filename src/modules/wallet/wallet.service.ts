@@ -52,7 +52,7 @@ export class WalletService {
     };
   }
 
-  @Cron('0 0 * * *')
+  @Cron('*/30 * * * * *')
   async checkPendingPayinTransactions() {
     const txs = await this.prisma.walletTransaction.findMany({
       where: {
