@@ -75,6 +75,7 @@ import * as cookieParser from 'cookie-parser';
 async function bootstrap() {
   const allowedOrigins = [
     'http://localhost:5173',
+    'https://localgo.onrender.com',
   ];
 
   const app = await NestFactory.create(AppModule, {
