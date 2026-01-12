@@ -86,9 +86,10 @@
 //   }
 // }
 // wallet/sepay.service.ts
-import { Injectable } from "@nestjs/common";
-
-// import theo kiểu CommonJS
+import { Injectable, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { PrismaService } from '../../database/prisma.service';
+import { TransactionStatus } from '@prisma/client';
 const Sepay: any = require("sepay-pg-node");
 
 @Injectable()
@@ -110,4 +111,24 @@ export class SepayService {
 
     return checkout.url;
   }
+
+  private readonly logger = new Logger(SepayService.name);
+
+  constructor(private prisma: PrismaService) {}
+
+  // 🔹 Cron chạy mỗi 15 phút
+  @Cron('*/30 * * * * *')
+  async removePendingTransactions() {
+    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+
+    const deleted = await this.prisma.walletTransaction.deleteMany({
+      where: {
+        status: TransactionStatus.PENDING,
+        createdAt: { lt: fifteenMinutesAgo }, // tạo trước 15 phút
+      },
+    });
+
+    this.logger.log(`Deleted ${deleted.count} pending transactions older than 15 minutes`);
+  }
+
 }
