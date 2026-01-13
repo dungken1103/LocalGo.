@@ -1,6 +1,7 @@
 import { IsString, IsInt, IsEnum, IsOptional, Min } from 'class-validator';
 import { CarType, DriveType } from '@prisma/client';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export class CreateCarDto {
   @ApiProperty({ example: 'Toyota', description: 'Car brand' })
@@ -44,6 +45,10 @@ export class CreateCarDto {
   @IsOptional()
   @IsString()
   description?: string;
+  @ApiProperty({ example: 'https://res.cloudinary.com/..', required: false })
+  @IsOptional()
+  @IsString()
+  image?: string;
 }
 
 export class UpdateCarDto {
@@ -71,6 +76,7 @@ export class UpdateCarDto {
   @IsOptional()
   @IsInt()
   @Min(1)
+  @Type(() => Number)
   seats?: number;
 
   @ApiProperty({ example: 'SELF_DRIVE', enum: DriveType, required: false })
@@ -82,6 +88,7 @@ export class UpdateCarDto {
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Type(() => Number)
   pricePerDay?: number;
 
   @ApiProperty({
@@ -91,4 +98,9 @@ export class UpdateCarDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @ApiProperty({ example: 'https://res.cloudinary.com/..', required: false })
+  @IsOptional()
+  @IsString()
+  image?: string;
 }

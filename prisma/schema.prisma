@@ -163,6 +163,8 @@ model Car {
   driveType   DriveType
   pricePerDay Int
   description String?
+  image       String?
+
 
   owner       User     @relation(fields: [ownerId], references: [id])
   bookings    Booking[]

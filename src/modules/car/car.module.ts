@@ -3,6 +3,7 @@ import { CarController } from './car.controller';
 import { CarService } from './car.service';
 import { DatabaseModule } from '../../database/database.module';
 import { JwtModule } from '@nestjs/jwt';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Module({
   imports: [
@@ -13,7 +14,7 @@ import { JwtModule } from '@nestjs/jwt';
     }),
   ],
   controllers: [CarController],
-  providers: [CarService],
+  providers: [CarService, CloudinaryService],
   exports: [CarService],
 })
 export class CarModule {}

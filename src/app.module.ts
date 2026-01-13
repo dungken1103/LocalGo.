@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import sepayConfig from './config/sepay.config';
+import cloudinaryConfig from './config/cloudinary.config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { SepayModule } from './modules/sepay/sepay.module';
@@ -16,7 +17,7 @@ import { CarModule } from './modules/car/car.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [sepayConfig],
+      load: [sepayConfig, cloudinaryConfig],
     }),
     ScheduleModule.forRoot(),
     SepayModule,
