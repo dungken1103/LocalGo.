@@ -12,6 +12,7 @@ import { UsersModule } from './modules/user/user.module';
 import { DatabaseModule } from './database/database.module';
 import { BookingModule } from './modules/booking/booking.module';
 import { CarModule } from './modules/car/car.module';
+import { ContractModule } from './modules/contract/contract.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { CarModule } from './modules/car/car.module';
     DatabaseModule,
     BookingModule,
     CarModule,
+    ContractModule,
   ],
   controllers: [AppController],
   providers: [AppService],
