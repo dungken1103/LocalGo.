@@ -1,8 +1,16 @@
 // src/modules/booking/booking.controller.ts
-import { Controller, Post, Body, Req, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Post,
+  Body,
+  Req,
+  UseGuards,
+  Get,
+  Query,
+} from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { BookingService } from './booking.service';
-import { CreateBookingDto } from './dto/booking.dto';
+import { CreateBookingDto, GetBookingDto } from './dto/booking.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @ApiTags('Booking')
@@ -15,5 +23,12 @@ export class BookingController {
   @Post('create')
   createBooking(@Req() req, @Body() dto: CreateBookingDto) {
     return this.bookingService.createBooking(req.user.userId, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get()
+  @ApiOperation({ summary: 'Get booking by ID or slug' })
+  getBooking(@Query() dto: GetBookingDto) {
+    return this.bookingService.getBooking(dto);
   }
 }
