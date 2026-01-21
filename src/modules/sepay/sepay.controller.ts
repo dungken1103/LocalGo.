@@ -1,6 +1,7 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { TransactionStatus, TransactionType } from '@prisma/client';
+import { HttpCode } from '@nestjs/common/decorators';
 
 @Controller('sepay')
 export class SepayController {
@@ -46,6 +47,7 @@ export class SepayController {
   //   return { ok: true };
   // }
   @Post('webhook')
+  @HttpCode(200)
   async handleWebhook(@Body() body: any) {
     if (!body) return { ok: true };
 

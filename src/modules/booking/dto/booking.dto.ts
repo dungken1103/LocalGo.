@@ -1,6 +1,6 @@
 // src/modules/booking/dto/create-booking.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
-import { IsUUID, IsDateString, IsOptional, IsString } from 'class-validator';
+import { IsUUID, IsDateString, IsOptional, IsString, IsNumber } from 'class-validator';
 
 export class CreateBookingDto {
   @ApiProperty({ example: 'uuid-car-id' })
@@ -14,6 +14,10 @@ export class CreateBookingDto {
   @ApiProperty({ example: '2026-01-18' })
   @IsDateString()
   endDate: string;
+
+  @ApiProperty({ example: 1000000, required: false })
+  @IsString()
+  slug?: string;
 }
 
 export class GetBookingDto {

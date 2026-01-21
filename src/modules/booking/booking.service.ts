@@ -38,6 +38,7 @@ export class BookingService {
 
     // 🔥 Transaction tạo booking + contract
     const result = await this.prisma.$transaction(async (tx) => {
+      const slug = `booking-${Math.random().toString(36).substring(2, 8)}`;
       const booking = await tx.booking.create({
         data: {
           carId: car.id,
@@ -47,10 +48,11 @@ export class BookingService {
           endDate: end,
           totalPrice,
           status: BookingStatus.PENDING_PAYMENT,
+          slug,
         },
       });
 
-      return { booking };
+      return booking ;
     });
 
     return result;
