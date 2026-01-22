@@ -119,7 +119,10 @@ export class ContractService {
         throw error;
       }
 
-      this.logger.error(`Error fetching contract: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error fetching contract: ${error.message}`,
+        error.stack,
+      );
       throw new BadRequestException('Failed to retrieve contract');
     }
   }

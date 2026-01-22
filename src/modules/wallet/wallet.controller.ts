@@ -34,13 +34,13 @@ export class WalletController {
       throw new BadRequestException('Body is required');
     }
 
-    const { userId, amount, sepayOrderId } = body;
+    const { userId, amount, sepayOrderId, bookingId } = body;
 
     if (!userId || !amount || !sepayOrderId) {
       throw new BadRequestException('Missing required fields');
     }
 
-    return this.walletService.createPayin(userId, amount, sepayOrderId);
+    return this.walletService.createPayin(userId, amount, sepayOrderId, bookingId);
   }
 
   @Get('user/:userId')

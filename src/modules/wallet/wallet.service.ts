@@ -28,7 +28,12 @@ export class WalletService {
     return wallet;
   }
 
-  async createPayin(userId: string, amount: number, sepayOrderId: string) {
+  async createPayin(
+    userId: string,
+    amount: number,
+    sepayOrderId: string,
+    bookingId?: string,
+  ) {
     const wallet = await this.prisma.wallet.findUnique({
       where: { userId },
     });
@@ -36,11 +41,13 @@ export class WalletService {
 
     const tx = await this.prisma.walletTransaction.create({
       data: {
-        walletId: wallet.id,
         amount,
         type: TransactionType.RENTAL_PENDING,
         status: TransactionStatus.PENDING,
         sepayOrderId,
+
+        walletId: wallet.id,
+        bookingId: bookingId ?? null,
       },
     });
 
@@ -63,10 +70,7 @@ export class WalletService {
     });
 
     for (const t of txs) {
-      const matched = await this.checkWithSepayAPI(
-        t.sepayOrderId!,
-        t.amount,
-      );
+      const matched = await this.checkWithSepayAPI(t.sepayOrderId!, t.amount);
       if (!matched) continue;
 
       // 🔒 ATOMIC UPDATE (CHỐT)

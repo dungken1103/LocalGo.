@@ -1,21 +1,8 @@
 export enum BookingStatus {
-  DRAFT = 'DRAFT',
   PENDING_PAYMENT = 'PENDING_PAYMENT',
-  PAID = 'PAID',
-  CONFIRMED = 'CONFIRMED',
-  IN_USE = 'IN_USE',
+  PENDING_CONFIRMATION = 'PENDING_CONFIRMATION',
+  ACTIVE = 'ACTIVE',
   COMPLETED = 'COMPLETED',
   CANCELLED = 'CANCELLED',
-  EXPIRED = 'EXPIRED',
 }
 
-export enum PaymentMethod {
-  VNPAY = 'VNPAY',
-  MOMO = 'MOMO',
-  CASH = 'CASH',
-}
-
-export enum LocationType {
-  STORE = 'STORE',
-  DELIVERY = 'DELIVERY',
-}

@@ -7,10 +7,11 @@ import {
   UseGuards,
   Get,
   Query,
+  Patch,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { BookingService } from './booking.service';
-import { CreateBookingDto, GetBookingDto } from './dto/booking.dto';
+import { CreateBookingDto, GetBookingDto, RenterGetBookingDto, UpdateBookingStatusDto } from './dto/booking.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @ApiTags('Booking')
@@ -22,6 +23,7 @@ export class BookingController {
   @UseGuards(JwtAuthGuard)
   @Post('create')
   createBooking(@Req() req, @Body() dto: CreateBookingDto) {
+    console.log(req.user.userId);
     return this.bookingService.createBooking(req.user.userId, dto);
   }
 
@@ -30,5 +32,26 @@ export class BookingController {
   @ApiOperation({ summary: 'Get booking by ID or slug' })
   getBooking(@Query() dto: GetBookingDto) {
     return this.bookingService.getBooking(dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('renter')
+  @ApiOperation({ summary: 'Renter get booking' })
+  renterGetBooking(@Req() req) {
+    return this.bookingService.getBookingByRenter(req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('update-status')
+  @ApiOperation({ 
+    summary: 'Update booking status (Renter only)', 
+    description: 'Renter can change booking status from PENDING_CONFIRMATION to ACTIVE or CANCELLED' 
+  })
+  updateBookingStatus(@Req() req, @Body() dto: UpdateBookingStatusDto) {
+    return this.bookingService.updateBookingStatus(
+      req.user.userId,
+      dto.slug,
+      dto.status,
+    );
   }
 }

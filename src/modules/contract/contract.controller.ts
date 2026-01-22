@@ -16,10 +16,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { ContractService } from './contract.service';
-import {
-  GetContractDto,
-  GetContractResponseDto,
-} from './dto/contract.dto';
+import { GetContractDto, GetContractResponseDto } from './dto/contract.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @ApiTags('Contract')

@@ -1,6 +1,6 @@
 // src/modules/booking/dto/create-booking.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
-import { IsUUID, IsDateString, IsOptional, IsString } from 'class-validator';
+import { IsUUID, IsDateString, IsOptional, IsString, IsNumber } from 'class-validator';
 
 export class CreateBookingDto {
   @ApiProperty({ example: 'uuid-car-id' })
@@ -14,6 +14,10 @@ export class CreateBookingDto {
   @ApiProperty({ example: '2026-01-18' })
   @IsDateString()
   endDate: string;
+
+  @ApiProperty({ example: 1000000, required: false })
+  @IsString()
+  slug?: string;
 }
 
 export class GetBookingDto {
@@ -32,4 +36,27 @@ export class AdminGetAllBookingDto {
   @IsOptional()
   @IsDateString()
   endDate?: string;
+}
+
+//renter getBooking
+export class  RenterGetBookingDto {
+  @ApiProperty({ example: '2026-01-01', required: false })
+  @IsOptional()
+  @IsDateString()
+  startDate?: string;
+}
+
+// Update Booking Status (for renter)
+export class UpdateBookingStatusDto {
+  @ApiProperty({ example: 'booking-slug' })
+  @IsString()
+  slug: string;
+
+  @ApiProperty({ 
+    example: 'ACTIVE', 
+    enum: ['ACTIVE', 'CANCELLED'],
+    description: 'New status for the booking (ACTIVE or CANCELLED)'
+  })
+  @IsString()
+  status: 'ACTIVE' | 'CANCELLED';
 }
