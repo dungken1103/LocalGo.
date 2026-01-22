@@ -2,7 +2,7 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { BookingStatus, ContractStatus } from '@prisma/client';
-import { GetBookingDto } from './dto/booking.dto';
+import { GetBookingDto, RenterGetBookingDto } from './dto/booking.dto';
 
 @Injectable()
 export class BookingService {
@@ -144,6 +144,133 @@ export class BookingService {
     return {
       success: true,
       data: bookings,
+    };
+  }
+  // renter get booking ordered by date
+  async getBookingByRenter(renterId: string) {
+    const bookings = await this.prisma.booking.findMany({
+      where: {
+        renterId: renterId,
+      },
+      include: {
+        car: {
+          select: {
+            id: true,
+            slug: true,
+            brand: true,
+            name: true,
+            color: true,
+            type: true,
+            seats: true,
+            pricePerDay: true,
+            image: true,
+          },
+        },
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        contract: {
+          select: {
+            id: true,
+            slug: true,
+            totalAmount: true,
+            status: true,
+            createdAt: true,
+            paidAt: true,
+          },
+        },
+        transactions: {
+          select: {
+            id: true,
+            amount: true,
+            type: true,
+            status: true,
+            createdAt: true,
+          },
+        },
+      },
+      orderBy: {
+        startDate: 'desc',
+      },
+    });
+
+    return {
+      success: true,
+      data: bookings,
+    };
+  }
+
+  // Update booking status (renter can change from PENDING_CONFIRMATION to ACTIVE or CANCELLED)
+  async updateBookingStatus(
+    renterId: string,
+    slug: string,
+    newStatus: 'ACTIVE' | 'CANCELLED',
+  ) {
+    // Find booking and verify ownership
+    const booking = await this.prisma.booking.findUnique({
+      where: { slug },
+      include: {
+        car: true,
+      },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    // Check if user is the renter
+    if (booking.renterId !== renterId) {
+      throw new BadRequestException('You are not authorized to update this booking');
+    }
+
+    // Check if current status is PENDING_CONFIRMATION
+    if (booking.status !== BookingStatus.PENDING_CONFIRMATION) {
+      throw new BadRequestException(
+        `Cannot update booking. Current status is ${booking.status}. Only bookings with PENDING_CONFIRMATION status can be updated.`,
+      );
+    }
+
+    // Validate new status
+    if (newStatus !== 'ACTIVE' && newStatus !== 'CANCELLED') {
+      throw new BadRequestException('Invalid status. Only ACTIVE or CANCELLED are allowed.');
+    }
+
+    // Update booking status
+    const updatedBooking = await this.prisma.booking.update({
+      where: { slug },
+      data: {
+        status: newStatus as BookingStatus,
+        updatedAt: new Date(),
+      },
+      include: {
+        car: {
+          select: {
+            id: true,
+            slug: true,
+            brand: true,
+            name: true,
+            pricePerDay: true,
+          },
+        },
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        contract: true,
+      },
+    });
+
+    return {
+      success: true,
+      message: `Booking status updated to ${newStatus}`,
+      data: updatedBooking,
     };
   }
 }

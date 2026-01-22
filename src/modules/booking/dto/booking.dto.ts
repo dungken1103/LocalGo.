@@ -37,3 +37,26 @@ export class AdminGetAllBookingDto {
   @IsDateString()
   endDate?: string;
 }
+
+//renter getBooking
+export class  RenterGetBookingDto {
+  @ApiProperty({ example: '2026-01-01', required: false })
+  @IsOptional()
+  @IsDateString()
+  startDate?: string;
+}
+
+// Update Booking Status (for renter)
+export class UpdateBookingStatusDto {
+  @ApiProperty({ example: 'booking-slug' })
+  @IsString()
+  slug: string;
+
+  @ApiProperty({ 
+    example: 'ACTIVE', 
+    enum: ['ACTIVE', 'CANCELLED'],
+    description: 'New status for the booking (ACTIVE or CANCELLED)'
+  })
+  @IsString()
+  status: 'ACTIVE' | 'CANCELLED';
+}

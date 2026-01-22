@@ -10,7 +10,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { CarService } from './car.service';
-import { CreateCarDto, UpdateCarDto } from './dto/car.dto';
+import { CreateCarDto, UpdateCarDto, RawCreateCarDto, RawUpdateCarDto } from './dto/car.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -57,13 +57,14 @@ export class CarController {
   async createCar(
     @Request() req: { user: { id: string } },
     @UploadedFile() file: Express.Multer.File,
-    @Body() body: any, // 👈 đổi từ CreateCarDto sang any
+    @Body() body: RawCreateCarDto,
   ) {
+    const { seats, pricePerDay, ...rest } = body;
     // Convert string -> number manually
     const createCarDto: CreateCarDto = {
-      ...body,
-      seats: Number(body.seats),
-      pricePerDay: Number(body.pricePerDay),
+      ...rest,
+      seats: Number(seats),
+      pricePerDay: Number(pricePerDay),
     };
 
     // Xử lý ảnh
@@ -98,16 +99,17 @@ export class CarController {
     @Param('id') id: string,
     @Request() req: { user: { id: string } },
     @UploadedFile() file: Express.Multer.File,
-    @Body() body: any, // đổi từ UpdateCarDto sang any
+    @Body() body: RawUpdateCarDto,
   ) {
     this.ensureTmpFolder();
 
+    const { seats, pricePerDay, ...rest } = body;
     // Convert các trường number nếu có
     const updateCarDto: UpdateCarDto = {
-      ...body,
-      ...(body.seats !== undefined && { seats: Number(body.seats) }),
-      ...(body.pricePerDay !== undefined && {
-        pricePerDay: Number(body.pricePerDay),
+      ...rest,
+      ...(seats !== undefined && { seats: Number(seats) }),
+      ...(pricePerDay !== undefined && {
+        pricePerDay: Number(pricePerDay),
       }),
     };
 
