@@ -147,10 +147,11 @@ export class BookingService {
     };
   }
   // renter get booking ordered by date
-  async getBookingByRenter(renterId: string) {
+  async getBookingByRenter(renterId: string, dto: RenterGetBookingDto) {
     const bookings = await this.prisma.booking.findMany({
       where: {
         renterId: renterId,
+        ...(dto.status && { status: dto.status as BookingStatus }),
       },
       include: {
         car: {
@@ -208,7 +209,7 @@ export class BookingService {
   async updateBookingStatus(
     renterId: string,
     slug: string,
-    newStatus: 'ACTIVE' | 'CANCELLED',
+    newStatus: BookingStatus,
   ) {
     // Find booking and verify ownership
     const booking = await this.prisma.booking.findUnique({
@@ -235,7 +236,7 @@ export class BookingService {
     }
 
     // Validate new status
-    if (newStatus !== 'ACTIVE' && newStatus !== 'CANCELLED') {
+    if (newStatus !== BookingStatus.ACTIVE && newStatus !== BookingStatus.CANCELLED) {
       throw new BadRequestException('Invalid status. Only ACTIVE or CANCELLED are allowed.');
     }
 
@@ -243,7 +244,7 @@ export class BookingService {
     const updatedBooking = await this.prisma.booking.update({
       where: { slug },
       data: {
-        status: newStatus as BookingStatus,
+        status: newStatus,
         updatedAt: new Date(),
       },
       include: {
