@@ -1,6 +1,8 @@
 // src/modules/booking/dto/create-booking.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
-import { IsUUID, IsDateString, IsOptional, IsString, IsNumber } from 'class-validator';
+import { IsUUID, IsDateString, IsOptional, IsString, IsNumber, IsEnum } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { BookingStatus } from '@prisma/client';
 
 export class CreateBookingDto {
   @ApiProperty({ example: 'uuid-car-id' })
@@ -40,10 +42,16 @@ export class AdminGetAllBookingDto {
 
 //renter getBooking
 export class  RenterGetBookingDto {
-  @ApiProperty({ example: '2026-01-01', required: false })
+  @ApiProperty({ 
+    example: 'ACTIVE', 
+    required: false,
+    enum: BookingStatus,
+    description: 'Filter bookings by status'
+  })
   @IsOptional()
-  @IsDateString()
-  startDate?: string;
+  @Transform(({ value }) => value?.toUpperCase())
+  @IsEnum(BookingStatus)
+  status?: BookingStatus;
 }
 
 // Update Booking Status (for renter)
@@ -54,9 +62,10 @@ export class UpdateBookingStatusDto {
 
   @ApiProperty({ 
     example: 'ACTIVE', 
-    enum: ['ACTIVE', 'CANCELLED'],
+    enum: BookingStatus,
     description: 'New status for the booking (ACTIVE or CANCELLED)'
   })
-  @IsString()
-  status: 'ACTIVE' | 'CANCELLED';
+  @Transform(({ value }) => value?.toUpperCase())
+  @IsEnum(BookingStatus)
+  status: BookingStatus;
 }

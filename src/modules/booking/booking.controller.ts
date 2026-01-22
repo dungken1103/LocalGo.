@@ -36,9 +36,12 @@ export class BookingController {
 
   @UseGuards(JwtAuthGuard)
   @Get('renter')
-  @ApiOperation({ summary: 'Renter get booking' })
-  renterGetBooking(@Req() req) {
-    return this.bookingService.getBookingByRenter(req.user.userId);
+  @ApiOperation({ 
+    summary: 'Renter get bookings',
+    description: 'Get all bookings for logged in renter, optionally filtered by status'
+  })
+  renterGetBooking(@Req() req, @Query() dto: RenterGetBookingDto) {
+    return this.bookingService.getBookingByRenter(req.user.userId, dto);
   }
 
   @UseGuards(JwtAuthGuard)
