@@ -1,8 +1,14 @@
 // src/modules/booking/booking.service.ts
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { BookingStatus, ContractStatus } from '@prisma/client';
 import { GetBookingDto, RenterGetBookingDto } from './dto/booking.dto';
+import { Cron } from '@nestjs/schedule';
 
 @Injectable()
 export class BookingService {
@@ -30,9 +36,7 @@ export class BookingService {
     }
 
     const days =
-      Math.ceil(
-        (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
-      ) || 1;
+      Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) || 1;
 
     const totalPrice = days * car.pricePerDay;
 
@@ -52,14 +56,14 @@ export class BookingService {
         },
       });
 
-      return booking ;
+      return booking;
     });
 
     return result;
   }
   // get booking by slug
   async getBooking(dto: GetBookingDto) {
-    if ( !dto.slug) {
+    if (!dto.slug) {
       throw new BadRequestException('Booking slug must be provided');
     }
 
@@ -225,7 +229,9 @@ export class BookingService {
 
     // Check if user is the renter
     if (booking.renterId !== renterId) {
-      throw new BadRequestException('You are not authorized to update this booking');
+      throw new BadRequestException(
+        'You are not authorized to update this booking',
+      );
     }
 
     // Check if current status is PENDING_CONFIRMATION
@@ -236,8 +242,13 @@ export class BookingService {
     }
 
     // Validate new status
-    if (newStatus !== BookingStatus.ACTIVE && newStatus !== BookingStatus.CANCELLED) {
-      throw new BadRequestException('Invalid status. Only ACTIVE or CANCELLED are allowed.');
+    if (
+      newStatus !== BookingStatus.ACTIVE &&
+      newStatus !== BookingStatus.CANCELLED
+    ) {
+      throw new BadRequestException(
+        'Invalid status. Only ACTIVE or CANCELLED are allowed.',
+      );
     }
 
     // Update booking status
@@ -273,5 +284,24 @@ export class BookingService {
       message: `Booking status updated to ${newStatus}`,
       data: updatedBooking,
     };
+  }
+
+  private readonly logger = new Logger(BookingService.name);
+  @Cron('5 0 * * *')
+  async removePendingTransactions() {
+    const start = new Date();
+
+    const deleted = await this.prisma.booking.deleteMany({
+      where: {
+        status: BookingStatus.PENDING_PAYMENT,
+        startDate: { lt: start },
+      },
+    });
+
+    if (deleted.count > 0) {
+      this.logger.log(
+        `Deleted ${deleted.count} pending bookings older than startDate: ${start}`,
+      );
+    }
   }
 }

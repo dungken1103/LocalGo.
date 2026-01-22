@@ -90,7 +90,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../database/prisma.service';
 import { TransactionStatus } from '@prisma/client';
-const Sepay: any = require("sepay-pg-node");
+const Sepay: any = require('sepay-pg-node');
 
 @Injectable()
 export class SepayService {
@@ -101,7 +101,7 @@ export class SepayService {
       secret: process.env.SEPAY_SECRET,
       sandbox: true,
       order_amount: amount,
-      order_currency: "VND",
+      order_currency: 'VND',
       order_description: `Nạp ví cho user ${userId}`,
       order_invoice_number: orderId,
       success_url: `http://localhost:5173/deposit/success?orderId=${orderId}`,
@@ -127,8 +127,10 @@ export class SepayService {
         createdAt: { lt: fifteenMinutesAgo }, // tạo trước 15 phút
       },
     });
-
-    this.logger.log(`Deleted ${deleted.count} pending transactions older than 15 minutes`);
+    if (deleted.count > 0) {
+      this.logger.log(
+        `Deleted ${deleted.count} pending transactions older than 15 minutes`,
+      );
+    }
   }
-
 }
