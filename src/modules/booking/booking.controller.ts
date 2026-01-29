@@ -8,11 +8,25 @@ import {
   Get,
   Query,
   Patch,
+  Param,
+  Delete,
+  Put,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+} from '@nestjs/swagger';
 import { BookingService } from './booking.service';
-import { CreateBookingDto, GetBookingDto, RenterGetBookingDto, UpdateBookingStatusDto } from './dto/booking.dto';
+import {
+  CreateBookingDto,
+  GetBookingDto,
+  RenterGetBookingDto,
+  UpdateBookingStatusDto,
+} from './dto/booking.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { BookingStatus } from './dto/booking.enum';
 
 @ApiTags('Booking')
 @ApiBearerAuth()
@@ -36,19 +50,43 @@ export class BookingController {
 
   @UseGuards(JwtAuthGuard)
   @Get('renter')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Renter get bookings',
-    description: 'Get all bookings for logged in renter, optionally filtered by status'
+    description:
+      'Get all bookings for logged in renter, optionally filtered by status',
   })
   renterGetBooking(@Req() req, @Query() dto: RenterGetBookingDto) {
     return this.bookingService.getBookingByRenter(req.user.userId, dto);
   }
 
+  @Get('status')
+  @ApiOperation({
+    summary: 'Get bookings',
+    description: 'Get all bookings, optionally filtered by status',
+  })
+  getBookings(@Query('status') status: BookingStatus) {
+    return this.bookingService.getAllBookingByStatus(status);
+  }
+
+  @Get('admin')
+  @ApiOperation({ summary: 'Admin get all bookings' })
+  adminGetAllBooking() {
+    return this.bookingService.getAllBookingAdmin();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('owner')
+  @ApiOperation({ summary: 'Owner get bookings' })
+  ownerGetBooking(@Req() req) {
+    return this.bookingService.getBookingByOwner(req.user.userId);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Patch('update-status')
-  @ApiOperation({ 
-    summary: 'Update booking status (Renter only)', 
-    description: 'Renter can change booking status from PENDING_CONFIRMATION to ACTIVE or CANCELLED' 
+  @ApiOperation({
+    summary: 'Update booking status (Renter only)',
+    description:
+      'Renter can change booking status from PENDING_CONFIRMATION to ACTIVE or CANCELLED',
   })
   updateBookingStatus(@Req() req, @Body() dto: UpdateBookingStatusDto) {
     return this.bookingService.updateBookingStatus(

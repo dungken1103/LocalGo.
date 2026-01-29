@@ -150,6 +150,45 @@ export class BookingService {
       data: bookings,
     };
   }
+  async getAllBookingByStatus(status: BookingStatus) {
+    const bookings = await this.prisma.booking.findMany({
+      where: {
+        status: status,
+      },
+      include: {
+        car: true,
+        renter: true,
+        owner: true,
+        contract: true,
+        transactions: true,
+      },
+    });
+
+    return {
+      success: true,
+      data: bookings,
+    };
+  }
+  // owner get booking by ownerId
+  async getBookingByOwner(ownerId: string) {
+    const bookings = await this.prisma.booking.findMany({
+      where: {
+        ownerId: ownerId,
+      },
+      include: {
+        car: true,
+        renter: true,
+        owner: true,
+        contract: true,
+        transactions: true,
+      },
+    });
+
+    return {
+      success: true,
+      data: bookings,
+    };
+  }
   // renter get booking ordered by date
   async getBookingByRenter(renterId: string, dto: RenterGetBookingDto) {
     const bookings = await this.prisma.booking.findMany({
