@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsOptional, IsString, IsEmail, IsEnum } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsEmail,
+  IsEnum,
+} from 'class-validator';
 
 export enum UserRole {
   RENTER = 'RENTER',

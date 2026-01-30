@@ -59,6 +59,12 @@ enum ContractStatus {
   EXPIRED
 }
 
+enum OwnerApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 //////////////////////
 // USER
 //////////////////////
@@ -71,7 +77,7 @@ model User {
   slug          String?  @unique
   role          Role     @default(RENTER)
   verified      Boolean  @default(true)
-
+  avatar        String?
   wallet        Wallet?
   cars          Car[]
 
@@ -81,10 +87,37 @@ model User {
   contractsRented Contract[] @relation("ContractRenter")
   contractsOwned  Contract[] @relation("ContractOwner")
 
+  ownerApplications OwnerApplication[]
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@map("user")
+}
+
+//////////////////////
+// OWNER APPLICATION
+//////////////////////
+
+model OwnerApplication {
+  id          String   @id @default(uuid())
+  slug        String?  @unique
+
+  userId      String
+  email       String
+  phone       String
+  avatar      String?
+  bankAccount String
+
+  status      OwnerApplicationStatus @default(PENDING)
+  rejectionReason String?
+
+  user        User     @relation(fields: [userId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("owner_application")
 }
 
 //////////////////////
