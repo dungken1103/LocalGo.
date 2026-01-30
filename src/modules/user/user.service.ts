@@ -1,6 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
+import {
+  ApplyOwnerDto,
+  ReviewOwnerApplicationDto,
+} from './dto/owner-application.dto';
 import * as bcrypt from 'bcrypt';
 import slugify from 'slugify';
 
@@ -61,6 +65,130 @@ export class UsersService {
     return this.prisma.user.update({
       where: { id: userId },
       data: updateUserDto,
+    });
+  }
+
+  async applyOwner(userId: string, applyOwnerDto: ApplyOwnerDto) {
+    // Kiểm tra user có tồn tại không
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    // Kiểm tra xem user đã có application pending không
+    const existingApplication = await this.prisma.ownerApplication.findFirst({
+      where: {
+        userId,
+        status: 'PENDING',
+      },
+    });
+
+    if (existingApplication) {
+      throw new Error('You already have a pending owner application');
+    }
+
+    // Tạo owner application mới
+    return this.prisma.ownerApplication.create({
+      data: {
+        ...applyOwnerDto,
+        userId,
+        slug: slugify(`${user.name}-${Date.now()}`, { lower: true }),
+      },
+    });
+  }
+
+  async getAllOwnerApplications() {
+    return this.prisma.ownerApplication.findMany({
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
+  async getOwnerApplicationById(applicationId: string) {
+    const application = await this.prisma.ownerApplication.findUnique({
+      where: { id: applicationId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    if (!application) {
+      throw new NotFoundException('Owner application not found');
+    }
+
+    return application;
+  }
+
+  async approveOwnerApplication(applicationId: string) {
+    const application = await this.prisma.ownerApplication.findUnique({
+      where: { id: applicationId },
+    });
+
+    if (!application) {
+      throw new NotFoundException('Owner application not found');
+    }
+
+    if (application.status !== 'PENDING') {
+      throw new Error('This application has already been reviewed');
+    }
+
+    // Cập nhật application status và user role
+    const [updatedApplication] = await this.prisma.$transaction([
+      this.prisma.ownerApplication.update({
+        where: { id: applicationId },
+        data: {
+          status: 'APPROVED',
+        },
+      }),
+      this.prisma.user.update({
+        where: { id: application.userId },
+        data: {
+          role: 'OWNER',
+        },
+      }),
+    ]);
+
+    return updatedApplication;
+  }
+
+  async rejectOwnerApplication(
+    applicationId: string,
+    reviewDto: ReviewOwnerApplicationDto,
+  ) {
+    const application = await this.prisma.ownerApplication.findUnique({
+      where: { id: applicationId },
+    });
+
+    if (!application) {
+      throw new NotFoundException('Owner application not found');
+    }
+
+    if (application.status !== 'PENDING') {
+      throw new Error('This application has already been reviewed');
+    }
+
+    return this.prisma.ownerApplication.update({
+      where: { id: applicationId },
+      data: {
+        status: 'REJECTED',
+        rejectionReason: reviewDto.rejectionReason,
+      },
     });
   }
 }
