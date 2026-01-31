@@ -5,7 +5,6 @@ import {
   IsEmail,
   IsEnum,
 } from 'class-validator';
-
 export enum UserRole {
   RENTER = 'RENTER',
   OWNER = 'OWNER',

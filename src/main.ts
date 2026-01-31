@@ -9,6 +9,8 @@ async function bootstrap() {
   const allowedOrigins = [
     'http://localhost:5173',
     'https://localgo.onrender.com',
+    'https://localgo.vercel.app',
+    'https://localhost:5174',
   ];
 
   const app = await NestFactory.create(AppModule, {
