@@ -208,4 +208,128 @@ export class CarService {
 
     return { message: 'Car deleted successfully' };
   }
+
+  async checkAvailability(carId: string, startDate: string, endDate: string) {
+    console.log('\n=== CHECK AVAILABILITY ===');
+    console.log('Car ID:', carId);
+    console.log('Start Date (raw):', startDate);
+    console.log('End Date (raw):', endDate);
+
+    const car = await this.prisma.car.findUnique({
+      where: { id: carId },
+    });
+
+    if (!car) {
+      throw new NotFoundException('Car not found');
+    }
+
+    // Kiểm tra nếu thiếu thông tin ngày
+    if (
+      !startDate ||
+      !endDate ||
+      startDate.trim() === '' ||
+      endDate.trim() === ''
+    ) {
+      return {
+        isAvailable: car.status === 'AVAILABLE',
+        conflictingBookings: 0,
+        carStatus: car.status,
+        message: 'Vui lòng chọn ngày nhận và trả xe để kiểm tra tình trạng',
+      };
+    }
+
+    // Validate và parse dates
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    console.log('Start Date (parsed):', start);
+    console.log('End Date (parsed):', end);
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return {
+        isAvailable: false,
+        conflictingBookings: 0,
+        carStatus: car.status,
+        message: 'Định dạng ngày không hợp lệ. Vui lòng chọn lại.',
+      };
+    }
+
+    if (start >= end) {
+      return {
+        isAvailable: false,
+        conflictingBookings: 0,
+        carStatus: car.status,
+        message: 'Ngày nhận xe phải trước ngày trả xe.',
+      };
+    }
+
+    // Kiểm tra các booking trùng lịch
+    // Logic: Booking conflict nếu startDate < end và endDate > start
+    const conflictingBookings = await this.prisma.booking.findMany({
+      where: {
+        carId,
+        status: {
+          in: ['PENDING_PAYMENT', 'PENDING_CONFIRMATION', 'ACTIVE'],
+        },
+        AND: [
+          {
+            startDate: {
+              lt: end, // Booking bắt đầu trước khi kết thúc
+            },
+          },
+          {
+            endDate: {
+              gt: start, // Booking kết thúc sau khi bắt đầu
+            },
+          },
+        ],
+      },
+    });
+
+    console.log('Conflicting bookings found:', conflictingBookings.length);
+    if (conflictingBookings.length > 0) {
+      console.log(
+        'Conflicting bookings:',
+        conflictingBookings.map((b) => ({
+          id: b.id,
+          startDate: b.startDate,
+          endDate: b.endDate,
+          status: b.status,
+        })),
+      );
+    }
+
+    const isAvailable =
+      conflictingBookings.length === 0 && car.status === 'AVAILABLE';
+
+    console.log('Is Available:', isAvailable);
+    console.log('=== END CHECK AVAILABILITY ===\n');
+
+    return {
+      isAvailable,
+      conflictingBookings: conflictingBookings.length,
+      carStatus: car.status,
+      message: !isAvailable
+        ? car.status !== 'AVAILABLE'
+          ? `Xe hiện đang ở trạng thái ${car.status}`
+          : 'Xe đã có lịch thuê trong khoảng thời gian này'
+        : 'Xe sẵn sàng cho thuê',
+    };
+  }
+
+  async checkAvailabilityBySlug(
+    slug: string,
+    startDate: string,
+    endDate: string,
+  ) {
+    const car = await this.prisma.car.findUnique({
+      where: { slug },
+    });
+
+    if (!car) {
+      throw new NotFoundException('Car not found');
+    }
+
+    return this.checkAvailability(car.id, startDate, endDate);
+  }
 }

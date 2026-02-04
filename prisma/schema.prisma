@@ -25,6 +25,12 @@ enum CarType {
   VAN
 }
 
+enum CarStatus {
+  AVAILABLE
+  RENTED
+  UNAVAILABLE
+}
+
 enum DriveType {
   SELF_DRIVE
   WITH_DRIVER
@@ -78,6 +84,9 @@ model User {
   role          Role     @default(RENTER)
   verified      Boolean  @default(true)
   avatar        String?
+  phone         String?
+  bankAccount   String?
+  bankName      String?
   wallet        Wallet?
   cars          Car[]
 
@@ -108,6 +117,7 @@ model OwnerApplication {
   phone       String
   avatar      String?
   bankAccount String
+  bankName    String?
 
   status      OwnerApplicationStatus @default(PENDING)
   rejectionReason String?
@@ -198,7 +208,7 @@ model Car {
   pricePerDay Int
   description String?
   image       String?
-
+  status      CarStatus @default(AVAILABLE)
 
   owner       User     @relation(fields: [ownerId], references: [id])
   bookings    Booking[]
