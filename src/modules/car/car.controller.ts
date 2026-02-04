@@ -8,6 +8,7 @@ import {
   Param,
   UseGuards,
   Request,
+  Query,
 } from '@nestjs/common';
 import { CarService } from './car.service';
 import { CreateCarDto, UpdateCarDto, RawCreateCarDto, RawUpdateCarDto } from './dto/car.dto';
@@ -143,6 +144,16 @@ export class CarController {
   @Roles(Role.OWNER, Role.ADMIN)
   async getMyCars(@Request() req: { user: { id: string } }) {
     return this.carService.getCarsByOwner(req.user.id);
+  }
+
+  @Get('check-availability/:slug')
+  async checkAvailability(
+    @Param('slug') slug: string,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+  ) {
+    console.log('Controller received:', { slug, startDate, endDate });
+    return this.carService.checkAvailabilityBySlug(slug, startDate, endDate);
   }
 
   @Get(':slug')

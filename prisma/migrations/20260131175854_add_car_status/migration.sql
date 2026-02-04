@@ -1,0 +1,5 @@
+-- CreateEnum
+CREATE TYPE "CarStatus" AS ENUM ('AVAILABLE', 'RENTED', 'UNAVAILABLE');
+
+-- AlterTable
+ALTER TABLE "Car" ADD COLUMN     "status" "CarStatus" NOT NULL DEFAULT 'AVAILABLE';

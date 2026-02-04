@@ -148,7 +148,7 @@ export class UsersService {
       throw new Error('This application has already been reviewed');
     }
 
-    // Cập nhật application status và user role
+    // Cập nhật application status và user role + thông tin
     const [updatedApplication] = await this.prisma.$transaction([
       this.prisma.ownerApplication.update({
         where: { id: applicationId },
@@ -160,6 +160,10 @@ export class UsersService {
         where: { id: application.userId },
         data: {
           role: 'OWNER',
+          phone: application.phone,
+          bankAccount: application.bankAccount,
+          bankName: application.bankName,
+          avatar: application.avatar || undefined,
         },
       }),
     ]);

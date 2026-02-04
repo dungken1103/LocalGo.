@@ -28,11 +28,47 @@ export class BookingService {
 
     if (!car) throw new BadRequestException('Car not found');
 
+    // Kiểm tra status xe
+    if (car.status !== 'AVAILABLE') {
+      throw new BadRequestException(
+        `Xe không thể thuê. Trạng thái hiện tại: ${car.status === 'RENTED' ? 'Đang được thuê' : 'Không khả dụng'}`,
+      );
+    }
+
     const start = new Date(dto.startDate);
     const end = new Date(dto.endDate);
 
     if (start >= end) {
       throw new BadRequestException('Invalid rental period');
+    }
+
+    // Kiểm tra xe có bị trùng lịch không
+    // Logic: Booking conflict nếu startDate < end và endDate > start
+    const conflictingBookings = await this.prisma.booking.findMany({
+      where: {
+        carId: dto.carId,
+        status: {
+          in: ['PENDING_PAYMENT', 'PENDING_CONFIRMATION', 'ACTIVE'],
+        },
+        AND: [
+          {
+            startDate: {
+              lt: end, // Booking bắt đầu trước khi kết thúc
+            },
+          },
+          {
+            endDate: {
+              gt: start, // Booking kết thúc sau khi bắt đầu
+            },
+          },
+        ],
+      },
+    });
+
+    if (conflictingBookings.length > 0) {
+      throw new BadRequestException(
+        'Xe đã có lịch thuê trong khoảng thời gian này. Vui lòng chọn thời gian khác.',
+      );
     }
 
     const days =

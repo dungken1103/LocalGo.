@@ -25,6 +25,10 @@ export class ApplyOwnerDto {
   @IsString()
   @Transform(({ value }) => String(value))
   bankAccount: string;
+
+  @IsOptional()
+  @IsString()
+  bankName?: string;
 }
 
 export class ReviewOwnerApplicationDto {
