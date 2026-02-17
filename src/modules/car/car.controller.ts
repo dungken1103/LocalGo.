@@ -133,9 +133,32 @@ export class CarController {
       ...(imageUrl && { image: imageUrl }),
     });
   }
-
+  // getall with params for pagination, filtering, sorting
+  @Get('search')
+  async searchCars(
+    @Query('make') make?: string,
+    @Query('model') model?: string,
+    @Query('year') year?: number,
+    @Query('seats') seats?: number,
+    @Query('priceMin') priceMin?: number,
+    @Query('priceMax') priceMax?: number,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'asc',
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    const filters = {
+      make,
+      model,
+      year,
+      seats,
+      priceMin,
+      priceMax,
+    };
+    return this.carService.searchCars(filters, sortBy, sortOrder, page, limit);
+  }
   @Get()
-  async getAllCars() {
+  getAllCars() {
     return this.carService.getAllCars();
   }
 
