@@ -34,8 +34,54 @@ export class CarService {
     return car;
   }
 
-  async getAllCars() {
-    return this.prisma.car.findMany({
+  async searchCars(
+    filters: {
+      make?: string;
+      model?: string;
+      year?: number;
+      seats?: number;
+      priceMin?: number;
+      priceMax?: number;
+    },
+    sortBy?: string,
+    sortOrder: 'asc' | 'desc' = 'asc',
+    page: number = 1,
+    limit: number = 10,
+  ) {
+    const where: any = {};
+
+    if (filters.make) {
+      where.make = { contains: filters.make, mode: 'insensitive' };
+    }
+    if (filters.model) {
+      where.model = { contains: filters.model, mode: 'insensitive' };
+    }
+    if (filters.year) {
+      where.year = filters.year;
+    }
+    if (filters.seats) {
+      where.seats = filters.seats;
+    }
+    if (filters.priceMin || filters.priceMax) {
+      where.pricePerDay = {};
+      if (filters.priceMin) {
+        where.pricePerDay.gte = filters.priceMin;
+      }
+      if (filters.priceMax) {
+        where.pricePerDay.lte = filters.priceMax;
+      }
+    }
+
+    const orderBy: any = {};
+    if (sortBy) {
+      orderBy[sortBy] = sortOrder;
+    }
+
+    const cars = await this.prisma.car.findMany({
+      where,
+      orderBy,
+      skip: (page - 1) * limit,
+      take: limit,
       include: {
         owner: {
           select: {
@@ -46,6 +92,7 @@ export class CarService {
         },
       },
     });
+    return cars;
   }
 
   async getCarById(id: string) {
