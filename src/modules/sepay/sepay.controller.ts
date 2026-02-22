@@ -4,6 +4,12 @@ import { TransactionStatus, TransactionType } from '@prisma/client';
 import { HttpCode } from '@nestjs/common/decorators';
 import { BookingStatus } from '../booking/dto/booking.enum';
 
+type SepayWebhookPayload = {
+  content?: string;
+  transferType?: string;
+  transferAmount?: number;
+};
+
 @Controller('sepay')
 export class SepayController {
   constructor(private prisma: PrismaService) {}
@@ -49,7 +55,7 @@ export class SepayController {
   // }
   @Post('webhook')
   @HttpCode(200)
-  async handleWebhook(@Body() body: any) {
+  async handleWebhook(@Body() body: SepayWebhookPayload) {
     if (!body) return { ok: true };
 
     const { content, transferType, transferAmount } = body;

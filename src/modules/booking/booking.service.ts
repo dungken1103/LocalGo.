@@ -6,7 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { BookingStatus, ContractStatus } from '@prisma/client';
+import { BookingStatus } from '@prisma/client';
 import { GetBookingDto, RenterGetBookingDto } from './dto/booking.dto';
 import { Cron } from '@nestjs/schedule';
 
@@ -230,7 +230,7 @@ export class BookingService {
     const bookings = await this.prisma.booking.findMany({
       where: {
         renterId: renterId,
-        ...(dto.status && { status: dto.status as BookingStatus }),
+        ...(dto.status && { status: dto.status }),
       },
       include: {
         car: {
@@ -375,7 +375,7 @@ export class BookingService {
 
     if (deleted.count > 0) {
       this.logger.log(
-        `Deleted ${deleted.count} pending bookings older than startDate: ${start}`,
+        `Deleted ${deleted.count} pending bookings older than startDate: ${start.toISOString()}`,
       );
     }
   }

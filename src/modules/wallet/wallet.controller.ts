@@ -8,10 +8,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { WalletService } from './wallet.service';
-import { DepositRequestDTO } from '../auth/dto/deposit-request.dto';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateInvoiceDto } from './dto/wallet.dto';
 import { BadRequestException } from '@nestjs/common';
+
+type CreateDepositBody = {
+  userId?: string;
+  amount?: number;
+  sepayOrderId?: string;
+  bookingId?: string;
+};
 
 @Controller('wallet')
 export class WalletController {
@@ -28,8 +34,8 @@ export class WalletController {
   }
 
   @Post('handle')
-  async createDepositRequest(@Body() body: any) {
-     console.log('BODY:', body);
+  async createDepositRequest(@Body() body: CreateDepositBody) {
+    console.log('BODY:', body);
     if (!body || Object.keys(body).length === 0) {
       throw new BadRequestException('Body is required');
     }
@@ -40,7 +46,12 @@ export class WalletController {
       throw new BadRequestException('Missing required fields');
     }
 
-    return this.walletService.createPayin(userId, amount, sepayOrderId, bookingId);
+    return this.walletService.createPayin(
+      userId,
+      amount,
+      sepayOrderId,
+      bookingId,
+    );
   }
 
   @Get('user/:userId')

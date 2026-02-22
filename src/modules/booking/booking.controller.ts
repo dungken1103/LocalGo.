@@ -8,16 +8,9 @@ import {
   Get,
   Query,
   Patch,
-  Param,
-  Delete,
-  Put,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiBearerAuth,
-  ApiOperation,
-  ApiParam,
-} from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { Request } from 'express';
 import { BookingService } from './booking.service';
 import {
   CreateBookingDto,
@@ -28,6 +21,12 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { BookingStatus } from './dto/booking.enum';
 
+type RequestWithUser = Request & {
+  user: {
+    userId: string;
+  };
+};
+
 @ApiTags('Booking')
 @ApiBearerAuth()
 @Controller('booking')
@@ -36,7 +35,7 @@ export class BookingController {
 
   @UseGuards(JwtAuthGuard)
   @Post('create')
-  createBooking(@Req() req, @Body() dto: CreateBookingDto) {
+  createBooking(@Req() req: RequestWithUser, @Body() dto: CreateBookingDto) {
     console.log(req.user.userId);
     return this.bookingService.createBooking(req.user.userId, dto);
   }
@@ -55,7 +54,10 @@ export class BookingController {
     description:
       'Get all bookings for logged in renter, optionally filtered by status',
   })
-  renterGetBooking(@Req() req, @Query() dto: RenterGetBookingDto) {
+  renterGetBooking(
+    @Req() req: RequestWithUser,
+    @Query() dto: RenterGetBookingDto,
+  ) {
     return this.bookingService.getBookingByRenter(req.user.userId, dto);
   }
 
@@ -77,7 +79,7 @@ export class BookingController {
   @UseGuards(JwtAuthGuard)
   @Get('owner')
   @ApiOperation({ summary: 'Owner get bookings' })
-  ownerGetBooking(@Req() req) {
+  ownerGetBooking(@Req() req: RequestWithUser) {
     return this.bookingService.getBookingByOwner(req.user.userId);
   }
 
@@ -88,7 +90,10 @@ export class BookingController {
     description:
       'Renter can change booking status from PENDING_CONFIRMATION to ACTIVE or CANCELLED',
   })
-  updateBookingStatus(@Req() req, @Body() dto: UpdateBookingStatusDto) {
+  updateBookingStatus(
+    @Req() req: RequestWithUser,
+    @Body() dto: UpdateBookingStatusDto,
+  ) {
     return this.bookingService.updateBookingStatus(
       req.user.userId,
       dto.slug,

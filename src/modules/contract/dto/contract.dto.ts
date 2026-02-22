@@ -1,15 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsUUID,
-  IsOptional,
-  IsString,
-  IsEnum,
-  IsInt,
-  IsDateString,
-  ValidateIf,
-} from 'class-validator';
+import { IsUUID, IsOptional, IsString, ValidateIf } from 'class-validator';
 import { ContractStatus } from '@prisma/client';
-import { Type } from 'class-transformer';
+
+type ContractLookupInput = {
+  contractId?: string;
+  slug?: string;
+};
 
 /**
  * DTO for querying a contract
@@ -22,7 +18,7 @@ export class GetContractDto {
   })
   @IsOptional()
   @IsUUID('4', { message: 'Invalid contract ID format' })
-  @ValidateIf((o) => !o.slug)
+  @ValidateIf((o: ContractLookupInput) => !o.slug)
   contractId?: string;
 
   @ApiPropertyOptional({
@@ -31,7 +27,7 @@ export class GetContractDto {
   })
   @IsOptional()
   @IsString()
-  @ValidateIf((o) => !o.contractId)
+  @ValidateIf((o: ContractLookupInput) => !o.contractId)
   slug?: string;
 }
 
@@ -129,7 +125,10 @@ export class ContractTransactionDto {
   @ApiProperty({ example: 1500000 })
   amount: number;
 
-  @ApiProperty({ example: 'RENTAL_PENDING', enum: ['PAYIN', 'RENTAL_PENDING', 'RENTAL_RELEASE', 'WITHDRAW'] })
+  @ApiProperty({
+    example: 'RENTAL_PENDING',
+    enum: ['PAYIN', 'RENTAL_PENDING', 'RENTAL_RELEASE', 'WITHDRAW'],
+  })
   type: string;
 
   @ApiProperty({ example: 'SUCCESS', enum: ['PENDING', 'SUCCESS', 'FAILED'] })

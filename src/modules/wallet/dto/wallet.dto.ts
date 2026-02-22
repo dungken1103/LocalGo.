@@ -5,10 +5,9 @@ export enum BookingStatus {
   PENDING_CONFIRMATION = 'PENDING_CONFIRMATION',
   ACTIVE = 'ACTIVE',
   COMPLETED = 'COMPLETED',
-  CANCELLED = 'CANCELLED',  
+  CANCELLED = 'CANCELLED',
   PENDING_PAYMENT = 'PENDING_PAYMENT',
 }
-
 
 export class CreateInvoiceDto {
   @ApiProperty({ example: 'uuid-booking-id' })

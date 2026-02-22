@@ -4,8 +4,26 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { Prisma } from '@prisma/client';
 import { CreateCarDto, UpdateCarDto } from './dto/car.dto';
 import { generateSlug } from '../../ultils/slug.util';
+
+type CarSortField =
+  | 'brand'
+  | 'name'
+  | 'year'
+  | 'seats'
+  | 'pricePerDay'
+  | 'createdAt';
+
+const CAR_SORT_FIELDS: readonly CarSortField[] = [
+  'brand',
+  'name',
+  'year',
+  'seats',
+  'pricePerDay',
+  'createdAt',
+];
 
 @Injectable()
 export class CarService {
@@ -38,7 +56,6 @@ export class CarService {
     filters: {
       make?: string;
       model?: string;
-      year?: number;
       seats?: number;
       priceMin?: number;
       priceMax?: number;
@@ -48,33 +65,32 @@ export class CarService {
     page: number = 1,
     limit: number = 10,
   ) {
-    const where: any = {};
+    const where: Prisma.CarWhereInput = {};
 
     if (filters.make) {
-      where.make = { contains: filters.make, mode: 'insensitive' };
+      where.brand = { contains: filters.make, mode: 'insensitive' };
     }
     if (filters.model) {
-      where.model = { contains: filters.model, mode: 'insensitive' };
-    }
-    if (filters.year) {
-      where.year = filters.year;
+      where.name = { contains: filters.model, mode: 'insensitive' };
     }
     if (filters.seats) {
       where.seats = filters.seats;
     }
     if (filters.priceMin || filters.priceMax) {
-      where.pricePerDay = {};
+      const pricePerDayFilter: Prisma.IntFilter = {};
       if (filters.priceMin) {
-        where.pricePerDay.gte = filters.priceMin;
+        pricePerDayFilter.gte = filters.priceMin;
       }
       if (filters.priceMax) {
-        where.pricePerDay.lte = filters.priceMax;
+        pricePerDayFilter.lte = filters.priceMax;
       }
+      where.pricePerDay = pricePerDayFilter;
     }
 
-    const orderBy: any = {};
-    if (sortBy) {
-      orderBy[sortBy] = sortOrder;
+    let orderBy: Prisma.CarOrderByWithRelationInput | undefined;
+    if (sortBy && CAR_SORT_FIELDS.includes(sortBy as CarSortField)) {
+      const validatedSortBy = sortBy as CarSortField;
+      orderBy = { [validatedSortBy]: sortOrder };
     }
 
     const cars = await this.prisma.car.findMany({
@@ -93,6 +109,20 @@ export class CarService {
       },
     });
     return cars;
+  }
+
+  async getAllCars() {
+    return this.prisma.car.findMany({
+      include: {
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
   }
 
   async getCarById(id: string) {

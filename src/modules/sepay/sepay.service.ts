@@ -87,10 +87,10 @@
 // }
 // wallet/sepay.service.ts
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../database/prisma.service';
 import { TransactionStatus } from '@prisma/client';
-const Sepay: any = require('sepay-pg-node');
+import Sepay from 'sepay-pg-node';
 
 @Injectable()
 export class SepayService {
