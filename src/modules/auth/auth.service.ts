@@ -58,7 +58,7 @@ export class AuthService {
     });
 
     const result = { ...user };
-    delete result.passwordHash;
+    Reflect.deleteProperty(result, 'passwordHash');
     return result;
   }
 
