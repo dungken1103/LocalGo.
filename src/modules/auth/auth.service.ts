@@ -16,6 +16,11 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import * as bcrypt from 'bcrypt';
 import { generateSlug } from '../../ultils/slug.util';
 
+type GoogleUserProfile = {
+  email: string;
+  name: string;
+};
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -86,7 +91,7 @@ export class AuthService {
   }
 
   // ================= GOOGLE LOGIN =================
-  async handleGoogleLogin(googleUser: any) {
+  async handleGoogleLogin(googleUser: GoogleUserProfile) {
     const { email, name } = googleUser;
 
     let user = await this.prisma.user.findUnique({

@@ -8,12 +8,9 @@ import {
   Req,
   Get,
   UseGuards,
-  Param,
-  NotFoundException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { UsersService } from '../user/user.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuthGuard } from '@nestjs/passport';
@@ -24,7 +21,15 @@ import {
 } from '../../common/dto/api-response.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import express from 'express';
-import { FastifyReply } from 'fastify';
+
+type GoogleUserProfile = {
+  email: string;
+  name: string;
+};
+
+type GoogleAuthRequest = express.Request & {
+  user?: GoogleUserProfile;
+};
 
 @ApiTags('auth')
 @Controller('auth')
@@ -105,8 +110,19 @@ export class AuthController {
 
   @Get('google/redirect')
   @UseGuards(AuthGuard('google'))
-  async googleAuthRedirect(@Req() req: Request, @Res() res: express.Response) {
-    const googleUser = (req as any).user;
+  async googleAuthRedirect(
+    @Req() req: GoogleAuthRequest,
+    @Res() res: express.Response,
+  ) {
+    const googleUser = req.user;
+
+    if (!googleUser) {
+      return res.status(HttpStatus.UNAUTHORIZED).json({
+        success: false,
+        statusCode: HttpStatus.UNAUTHORIZED,
+        message: 'Google authentication failed',
+      });
+    }
 
     // Gọi service để xử lý lưu user nếu cần và tạo JWT
     const result = await this.authService.handleGoogleLogin(googleUser);

@@ -21,6 +21,12 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 
+type AuthenticatedRequest = {
+  user: {
+    id: string;
+  };
+};
+
 @Controller('users')
 export class UsersController {
   constructor(
@@ -46,7 +52,10 @@ export class UsersController {
   // Owner Application Routes
   @Post('apply-owner')
   @UseGuards(JwtAuthGuard)
-  async applyOwner(@Request() req, @Body() applyOwnerDto: ApplyOwnerDto) {
+  async applyOwner(
+    @Request() req: AuthenticatedRequest,
+    @Body() applyOwnerDto: ApplyOwnerDto,
+  ) {
     return this.usersService.applyOwner(req.user.id, applyOwnerDto);
   }
 

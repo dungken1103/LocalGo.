@@ -1,6 +1,28 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { Request } from 'express';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../database/prisma.service';
+
+interface JwtPayload {
+  sub?: string;
+  userId?: string;
+}
+
+interface AuthenticatedUser {
+  id: string;
+  email: string;
+  name: string | null;
+  role: string;
+}
+
+type AuthenticatedRequest = Request & {
+  user?: AuthenticatedUser;
+};
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -10,7 +32,7 @@ export class JwtAuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const token = this.extractTokenFromHeader(request);
 
     if (!token) {
@@ -18,11 +40,16 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     try {
-      const payload = this.jwtService.verify(token);
-      
+      const payload = this.jwtService.verify<JwtPayload>(token);
+      const userId = payload.sub ?? payload.userId;
+
+      if (!userId) {
+        throw new UnauthorizedException('Invalid token payload');
+      }
+
       // Fetch user details from database
       const user = await this.prisma.user.findUnique({
-        where: { id: payload.sub || payload.userId },
+        where: { id: userId },
         select: {
           id: true,
           email: true,
@@ -38,13 +65,21 @@ export class JwtAuthGuard implements CanActivate {
       // Add user to request object
       request.user = user;
       return true;
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid token');
     }
   }
 
-  private extractTokenFromHeader(request: any): string | undefined {
-    const [type, token] = request.headers.authorization?.split(' ') ?? [];
+  private extractTokenFromHeader(request: Request): string | undefined {
+    const authorization = request.headers.authorization;
+    const bearerToken =
+      typeof authorization === 'string'
+        ? authorization
+        : Array.isArray(authorization)
+          ? authorization[0]
+          : undefined;
+
+    const [type, token] = bearerToken?.split(' ') ?? [];
     return type === 'Bearer' ? token : undefined;
   }
 }

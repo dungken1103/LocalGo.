@@ -6,7 +6,15 @@ import { TransactionStatus, TransactionType } from '@prisma/client';
 import { NotFoundException } from '@nestjs/common';
 import { BookingStatus } from '@prisma/client';
 import { ContractStatus } from '@prisma/client';
-import { Contract } from './dto/contract.dto';
+
+type SepayTransaction = {
+  transaction_content?: string;
+  amount_in?: string | number;
+};
+
+type SepayTransactionsResponse = {
+  transactions?: SepayTransaction[];
+};
 
 @Injectable()
 export class WalletService {
@@ -145,16 +153,20 @@ export class WalletService {
   ): Promise<boolean> {
     const url = 'https://my.sepay.vn/userapi/transactions/list';
 
-    const res = await axios.get(url, {
+    const res = await axios.get<SepayTransactionsResponse>(url, {
       headers: {
         Authorization: `Bearer ${process.env.SEPAY_TOKEN}`,
       },
     });
 
-    return res.data.transactions?.some(
-      (txn) =>
-        txn.transaction_content?.includes(sepayOrderId) &&
-        Math.round(Number(txn.amount_in)) === amount,
+    const transactions = res.data.transactions ?? [];
+
+    return (
+      transactions.some(
+        (txn) =>
+          txn.transaction_content?.includes(sepayOrderId) &&
+          Math.round(Number(txn.amount_in)) === amount,
+      ) ?? false
     );
   }
   async payin(userId: string, amount: number) {

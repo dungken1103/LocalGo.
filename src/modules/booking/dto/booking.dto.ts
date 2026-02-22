@@ -1,6 +1,12 @@
 // src/modules/booking/dto/create-booking.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
-import { IsUUID, IsDateString, IsOptional, IsString, IsNumber, IsEnum } from 'class-validator';
+import {
+  IsUUID,
+  IsDateString,
+  IsOptional,
+  IsString,
+  IsEnum,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 import { BookingStatus } from '@prisma/client';
 
@@ -41,15 +47,17 @@ export class AdminGetAllBookingDto {
 }
 
 //renter getBooking
-export class  RenterGetBookingDto {
-  @ApiProperty({ 
-    example: 'ACTIVE', 
+export class RenterGetBookingDto {
+  @ApiProperty({
+    example: 'ACTIVE',
     required: false,
     enum: BookingStatus,
-    description: 'Filter bookings by status'
+    description: 'Filter bookings by status',
   })
   @IsOptional()
-  @Transform(({ value }) => value?.toUpperCase())
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.toUpperCase() : value,
+  )
   @IsEnum(BookingStatus)
   status?: BookingStatus;
 }
@@ -60,12 +68,14 @@ export class UpdateBookingStatusDto {
   @IsString()
   slug: string;
 
-  @ApiProperty({ 
-    example: 'ACTIVE', 
+  @ApiProperty({
+    example: 'ACTIVE',
     enum: BookingStatus,
-    description: 'New status for the booking (ACTIVE or CANCELLED)'
+    description: 'New status for the booking (ACTIVE or CANCELLED)',
   })
-  @Transform(({ value }) => value?.toUpperCase())
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.toUpperCase() : value,
+  )
   @IsEnum(BookingStatus)
   status: BookingStatus;
 }

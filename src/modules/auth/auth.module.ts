@@ -14,17 +14,17 @@ import { MailModule } from '../mail/mail.module';
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
+      useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
         signOptions: { expiresIn: '1d' },
       }),
       inject: [ConfigService],
     }),
     ConfigModule,
-    MailModule
+    MailModule,
     // UserModule, // Make sure this is here
   ],
-  providers: [AuthService, JwtStrategy, JwtAuthGuard,GoogleStrategy],
+  providers: [AuthService, JwtStrategy, JwtAuthGuard, GoogleStrategy],
   controllers: [AuthController],
   exports: [AuthService],
 })

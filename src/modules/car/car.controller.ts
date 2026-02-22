@@ -11,7 +11,12 @@ import {
   Query,
 } from '@nestjs/common';
 import { CarService } from './car.service';
-import { CreateCarDto, UpdateCarDto, RawCreateCarDto, RawUpdateCarDto } from './dto/car.dto';
+import {
+  CreateCarDto,
+  UpdateCarDto,
+  RawCreateCarDto,
+  RawUpdateCarDto,
+} from './dto/car.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -21,7 +26,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { UseInterceptors, UploadedFile } from '@nestjs/common';
 import { diskStorage } from 'multer';
 import { v4 as uuidv4 } from 'uuid';
-import { v2 as cloudinary } from 'cloudinary';
 import * as fs from 'fs';
 import * as path from 'path';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
@@ -138,7 +142,6 @@ export class CarController {
   async searchCars(
     @Query('make') make?: string,
     @Query('model') model?: string,
-    @Query('year') year?: number,
     @Query('seats') seats?: number,
     @Query('priceMin') priceMin?: number,
     @Query('priceMax') priceMax?: number,
@@ -150,7 +153,6 @@ export class CarController {
     const filters = {
       make,
       model,
-      year,
       seats,
       priceMin,
       priceMax,

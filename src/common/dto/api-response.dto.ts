@@ -163,7 +163,11 @@ export class ApiPaginatedResponse<T> {
   })
   timestamp: string;
 
-  constructor(data: T[], pagination: PaginationResponse, message: string = 'Data retrieved successfully') {
+  constructor(
+    data: T[],
+    pagination: PaginationResponse,
+    message: string = 'Data retrieved successfully',
+  ) {
     this.success = true;
     this.statusCode = 200;
     this.message = message;

@@ -4,6 +4,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { GetContractDto, GetContractResponseDto } from './dto/contract.dto';
 
@@ -35,15 +36,19 @@ export class ContractService {
 
     try {
       // Build where clause dynamically
-      const whereClause: any = { OR: [] };
+      const orConditions: Prisma.ContractWhereInput[] = [];
 
       if (dto.contractId) {
-        whereClause.OR.push({ id: dto.contractId });
+        orConditions.push({ id: dto.contractId });
       }
 
       if (dto.slug) {
-        whereClause.OR.push({ slug: dto.slug });
+        orConditions.push({ slug: dto.slug });
       }
+
+      const whereClause: Prisma.ContractWhereInput = {
+        OR: orConditions,
+      };
 
       const contract = await this.prisma.contract.findFirst({
         where: whereClause,
@@ -108,10 +113,10 @@ export class ContractService {
 
       return {
         success: true,
-        data: contract as any,
+        data: contract as GetContractResponseDto['data'],
         message: 'Contract retrieved successfully',
       };
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         error instanceof NotFoundException ||
         error instanceof BadRequestException
@@ -119,10 +124,11 @@ export class ContractService {
         throw error;
       }
 
-      this.logger.error(
-        `Error fetching contract: ${error.message}`,
-        error.stack,
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      const errorStack = error instanceof Error ? error.stack : undefined;
+
+      this.logger.error(`Error fetching contract: ${errorMessage}`, errorStack);
       throw new BadRequestException('Failed to retrieve contract');
     }
   }
