@@ -57,7 +57,8 @@ export class AuthService {
       },
     });
 
-    const { passwordHash, ...result } = user;
+    const result = { ...user };
+    delete result.passwordHash;
     return result;
   }
 
